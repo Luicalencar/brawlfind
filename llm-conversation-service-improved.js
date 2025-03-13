@@ -2,7 +2,7 @@
 // Enhanced LLM-based conversation service for Brawl Stars content search
 
 const { Configuration, OpenAIApi } = require('openai');
-const dbService = require('./database-service');
+const dbService = require('./database-service-improved');
 const pino = require('pino');
 const { v4: uuidv4 } = require('uuid');
 const NodeCache = require('node-cache');
