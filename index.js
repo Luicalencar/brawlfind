@@ -2,7 +2,6 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -21,6 +20,85 @@ app.get('/api/health', (req, res) => {
     message: 'Brawl Stars Content API is running',
     version: '1.0.0',
     timestamp: new Date().toISOString()
+  });
+});
+
+// Filters endpoint
+app.get('/api/filters', (req, res) => {
+  res.status(200).json({
+    brawlers: ['Shelly', 'Colt', 'Brock', 'Spike', 'Bo', 'El Primo', 'Mortis'].map(brawler => ({ id: brawler, name: brawler })),
+    gameModes: ['Gem Grab', 'Showdown', 'Brawl Ball', 'Heist'].map(mode => ({ id: mode, name: mode })),
+    contentTypes: [
+      { id: 'tutorial', name: 'Tutorials' },
+      { id: 'gameplay', name: 'Gameplay' },
+      { id: 'tips', name: 'Tips & Tricks' },
+      { id: 'funny', name: 'Funny Moments' }
+    ],
+    skillLevels: [
+      { id: 'beginner', name: 'Beginner' },
+      { id: 'intermediate', name: 'Intermediate' },
+      { id: 'advanced', name: 'Advanced' }
+    ],
+    sortOptions: [
+      { id: 'relevance', name: 'Most Relevant' },
+      { id: 'recent', name: 'Most Recent' },
+      { id: 'popular', name: 'Most Popular' }
+    ]
+  });
+});
+
+// Recommendations endpoint
+app.get('/api/recommendations', (req, res) => {
+  res.status(200).json({
+    videos: getSampleVideos(),
+    trendingBrawlers: [
+      { name: 'Shelly', count: 120 },
+      { name: 'Colt', count: 95 },
+      { name: 'Bo', count: 80 }
+    ],
+    popularQueries: [
+      { query: 'brawl ball tips', count: 50 },
+      { query: 'best shelly build', count: 45 },
+      { query: 'how to use mortis', count: 40 }
+    ]
+  });
+});
+
+// Video details endpoint
+app.get('/api/videos/:youtubeId', (req, res) => {
+  const { youtubeId } = req.params;
+  const sampleVideo = getSampleVideos().find(video => video.youtubeId === youtubeId) || getSampleVideos()[0];
+  
+  res.status(200).json({
+    video: {
+      ...sampleVideo,
+      description: 'This is a detailed description of the video with tips and strategies.',
+      timestamps: [
+        { time: 30, title: 'Introduction' },
+        { time: 60, title: 'Strategy overview' },
+        { time: 120, title: 'Gameplay example' }
+      ]
+    },
+    recommendations: getSampleVideos()
+  });
+});
+
+// User preferences endpoint
+app.get('/api/preferences', (req, res) => {
+  res.status(200).json({
+    preferredBrawlers: ['Shelly', 'Spike'],
+    preferredGameModes: ['Gem Grab'],
+    preferredContentTypes: ['tips', 'gameplay']
+  });
+});
+
+// Feedback endpoint
+app.post('/api/feedback', (req, res) => {
+  const { youtubeId, feedbackType, comment } = req.body;
+  
+  res.status(200).json({
+    success: true,
+    message: 'Feedback received, thank you!'
   });
 });
 
@@ -92,6 +170,11 @@ function getSampleVideos() {
     }
   ];
 }
+
+// Clear conversation history endpoint
+app.delete('/api/conversation/history', (req, res) => {
+  res.status(200).json({ message: 'Conversation history cleared' });
+});
 
 // Start the server
 app.listen(PORT, () => {
