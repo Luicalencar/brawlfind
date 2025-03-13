@@ -4,7 +4,7 @@
   "description": "A conversational interface for searching Brawl Stars gaming content with YouTube integration",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
+    "start": "node index.js",
     "dev": "nodemon app.js",
     "client": "cd client && npm start",
     "dev:all": "concurrently \"npm run dev\" \"npm run client\"",
@@ -12,7 +12,7 @@
     "collect:full": "node data-collector.js --mode=full",
     "collect:incremental": "node data-collector.js --mode=incremental",
     "install:all": "npm install && cd client && npm install",
-    "build": "cd client && npm run build",
+    "build": "echo 'Backend service - no build needed'",
     "deploy": "npm run build && node scripts/deploy.js",
     "test": "jest",
     "test:watch": "jest --watch",
