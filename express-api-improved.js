@@ -15,10 +15,10 @@ const expressPino = require('express-pino-logger');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 
-const dbService = require('./database-service');
-const conversationService = require('./llm-conversation-service');
-const contentCollector = require('./data-collector');
-const youtubeService = require('./youtube-service');
+const dbService = require('./database-service-improved');
+const conversationService = require('./llm-conversation-service-improved');
+const contentCollector = require('./data-collector-improved');
+const youtubeService = require('./youtube-service-improved');
 
 require('dotenv').config();
 
