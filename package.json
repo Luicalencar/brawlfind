@@ -4,7 +4,7 @@
   "description": "A conversational interface for searching Brawl Stars gaming content with YouTube integration",
   "main": "app.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node express-api-improved.js",
     "dev": "nodemon app.js",
     "client": "cd client && npm start",
     "dev:all": "concurrently \"npm run dev\" \"npm run client\"",
