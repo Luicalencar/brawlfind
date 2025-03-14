@@ -250,15 +250,15 @@ function App() {
   };
   
   // Fetch available filters
- const fetchFilters = async () => {
+const fetchFilters = async () => {
   try {
     const response = await api.get('/filters');
+    console.log("FILTERS RESPONSE:", response.data);
     setFilters(response.data);
   } catch (error) {
     console.error('Error fetching filters:', error);
-    // Use mock data as fallback
-    setFilters(mockFilters);
-    showToast('Using local data', 'info');
+    showToast('Error loading filters', 'error');
+    // Remove this line: setFilters(mockFilters);
   }
 };
   
@@ -278,22 +278,23 @@ function App() {
   try {
     setLoading(true);
     const response = await api.get('/recommendations');
+    console.log("RECOMMENDATIONS RESPONSE:", response.data);
     setRecommendations(response.data.videos || []);
     setTrendingBrawlers(response.data.trendingBrawlers || []);
     setPopularQueries(response.data.popularQueries || []);
   } catch (error) {
     console.error('Error fetching recommendations:', error);
-    // Use mock data as fallback
-    setRecommendations(mockRecommendations.videos || []);
-    setTrendingBrawlers(mockRecommendations.trendingBrawlers || []);
-    setPopularQueries(mockRecommendations.popularQueries || []);
-    showToast('Using local recommendations', 'info');
+    showToast('Error loading recommendations', 'error');
+    // Remove these lines:
+    // setRecommendations(mockRecommendations.videos || []);
+    // setTrendingBrawlers(mockRecommendations.trendingBrawlers || []);
+    // setPopularQueries(mockRecommendations.popularQueries || []);
   } finally {
     setLoading(false);
   }
 };
   
-  // Handle sending a message
+ // Handle sending a message
 const handleSendMessage = async (e) => {
   e?.preventDefault();
   
@@ -347,29 +348,16 @@ const handleSendMessage = async (e) => {
     fetchUserPreferences();
   } catch (error) {
     console.error('Error sending message:', error);
-    // Use mock data as fallback
-    const mockResponse = mockConversationResponse;
-    
+    // Replace mock fallback with error message
     const assistantMessage = {
       role: 'assistant',
-      content: mockResponse.message,
+      content: "I'm sorry, I encountered a problem processing your message. Please try again.",
       timestamp: new Date().toISOString(),
-      suggestedActions: mockResponse.suggestedActions || []
+      error: true
     };
     
     setMessages(prev => [...prev, assistantMessage]);
-    setSearchResults(mockResponse.results || []);
-    
-    if (mockResponse.pagination) {
-      setPagination({
-        current: mockResponse.pagination.page,
-        total: mockResponse.pagination.pages,
-        limit: mockResponse.pagination.limit
-      });
-    }
-    
-    setProcessingMetrics(mockResponse.metrics);
-    showToast('Using local data for conversation', 'info');
+    showToast('Error processing message', 'error');
   } finally {
     setLoading(false);
   }
