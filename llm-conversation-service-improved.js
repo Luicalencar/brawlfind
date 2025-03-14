@@ -435,90 +435,71 @@ Remember to make your response natural and conversational, focusing on being hel
  * @returns {Promise<Object>} Response with message, results, and suggested actions
  */
 async function processMessage(message, conversationHistory = [], userPreferences = {}) {
+  // Build a prompt that instructs the AI to return ONLY a JSON object with specific keys.
+  const prompt = `
+You are an AI assistant that helps users find Brawl Stars content.
+Convert the following natural language query into a JSON object with exactly these keys:
+- "query": the search text to use
+- "brawlers": an array of brawler names (if mentioned, otherwise an empty array)
+- "gameModes": an array of game mode names (if mentioned, otherwise an empty array)
+- "contentType": an array of content types (e.g., "tutorial", "gameplay", "entertainment"; if none, return an empty array)
+- "skillLevel": one of "beginner", "intermediate", "advanced" or an empty string if not specified
+- "sortBy": one of "relevance", "recent", "popular", "trending"
+- "intent": a brief description of the user's intent
+- "rephrased": a rephrased version of the query
+
+Return only the JSON object with no extra explanation or text.
+For example:
+{"query": "show me gameplay of Mortis", "brawlers": ["Mortis"], "gameModes": [], "contentType": ["gameplay"], "skillLevel": "", "sortBy": "relevance", "intent": "gameplay", "rephrased": "gameplay of Mortis"}
+
+Here is the conversation history:
+${conversationHistory.map(m => m.role + ": " + m.content).join("\n")}
+
+User query: "${message}"
+  `.trim();
+
   try {
-    const requestId = uuidv4();
-    logger.info({ message, requestId, userId: userPreferences.userId }, 'Processing message');
-    
-    // Start timer for performance monitoring
-    const startTime = Date.now();
-    
-    // Add the user message to the conversation history
-    const updatedHistory = [
-      ...conversationHistory,
-      { role: 'user', content: message }
-    ];
-    
-    // Generate search parameters from the message
-    const searchParamsStartTime = Date.now();
-    const searchParams = await generateSearchParams(message, conversationHistory, userPreferences);
-    const searchParamsTime = Date.now() - searchParamsStartTime;
-    
-    // Search the database with the generated parameters
-    const searchStartTime = Date.now();
-    const { videos, pagination } = await dbService.searchVideos({
-      ...searchParams,
-      limit: DEFAULT_SEARCH_LIMIT
+    const response = await openai.createChatCompletion({
+      model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
+      messages: [
+        { role: "system", content: prompt }
+      ],
+      temperature: 0.2,
+      max_tokens: 150
     });
-    const searchTime = Date.now() - searchStartTime;
     
-    // Generate a response based on the search results
-    const responseStartTime = Date.now();
-    const response = await generateResponse(searchParams, videos, updatedHistory);
-    const responseTime = Date.now() - responseStartTime;
+    const responseText = response.data.choices[0].message.content.trim();
+    console.log("OpenAI raw response:", responseText);
     
-    // Save the search query for analytics
-    await dbService.saveSearchQuery(message, searchParams, userPreferences.userId, userPreferences.sessionId);
-    
-    // Log performance metrics
-    const totalProcessingTime = Date.now() - startTime;
-    logger.info({ 
-      requestId, 
-      totalTime: totalProcessingTime,
-      searchParamsTime,
-      searchTime,
-      responseTime,
-      resultsCount: videos.length
-    }, 'Message processing completed');
-    
-    // Record detailed metrics for analysis
-    dbService.recordMetric('message_processing', {
-      requestId,
-      userId: userPreferences.userId,
-      messageLength: message.length,
-      totalTime: totalProcessingTime,
-      searchParamsTime,
-      searchTime,
-      responseTime,
-      resultsCount: videos.length,
-      brawlersCount: searchParams.brawlers?.length || 0,
-      gameModesCount: searchParams.gameModes?.length || 0
-    }).catch(err => logger.error(err, 'Failed to record metrics'));
-    
-    // Return the response with search results
-    return {
-      message: response.message,
-      results: videos,
-      suggestedActions: response.suggestedActions,
-      searchParams,
-      pagination,
-      metrics: {
-        totalTime: totalProcessingTime,
-        searchParamsTime,
-        searchTime,
-        responseTime
+    let parsedJSON;
+    try {
+      // Attempt to parse the response directly as JSON
+      parsedJSON = JSON.parse(responseText);
+    } catch (e) {
+      // If that fails, try to extract JSON between markdown triple backticks
+      const match = responseText.match(/```json\s*([\s\S]*?)\s*```/);
+      if (match && match[1]) {
+        parsedJSON = JSON.parse(match[1].trim());
+      } else {
+        throw new Error("Failed to parse JSON from OpenAI response: " + responseText);
       }
+    }
+    
+    // Return a response object that matches your app's expected format.
+    return {
+      message: "Chat processed successfully.",
+      results: [], // Video results will be fetched by your backend search after parameters are generated.
+      suggestedActions: [],
+      searchParams: parsedJSON,
+      pagination: { total: 0, page: 1, limit: 12, pages: 0 },
+      metrics: { totalTime: 0 }
     };
   } catch (error) {
-    logger.error({ error, message }, 'Error processing message');
-    return {
-      message: "I'm sorry, I encountered an error while searching for Brawl Stars content. Please try again with a different query.",
-      results: [],
-      suggestedActions: [],
-      searchParams: {},
-      pagination: { total: 0, page: 1, limit: DEFAULT_SEARCH_LIMIT, pages: 0 }
-    };
+    console.error("Error in processMessage:", error);
+    throw error;
   }
 }
+
 
 /**
  * Handle user feedback on a video
