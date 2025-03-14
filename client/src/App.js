@@ -13,6 +13,7 @@ import 'tippy.js/dist/tippy.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import { debounce } from 'lodash';
 import './App.css';
+import { mockFilters, mockRecommendations, mockConversationResponse } from './mockData';
 
 // API base URL - replace with your deployed API URL
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
@@ -249,15 +250,17 @@ function App() {
   };
   
   // Fetch available filters
-  const fetchFilters = async () => {
-    try {
-      const response = await api.get('/filters');
-      setFilters(response.data);
-    } catch (error) {
-      console.error('Error fetching filters:', error);
-      showToast('Failed to load filters', 'error');
-    }
-  };
+ const fetchFilters = async () => {
+  try {
+    const response = await api.get('/filters');
+    setFilters(response.data);
+  } catch (error) {
+    console.error('Error fetching filters:', error);
+    // Use mock data as fallback
+    setFilters(mockFilters);
+    showToast('Using local data', 'info');
+  }
+};
   
   // Fetch user preferences
   const fetchUserPreferences = async () => {
