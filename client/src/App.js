@@ -275,87 +275,105 @@ function App() {
   
   // Fetch personalized recommendations
   const fetchRecommendations = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('/recommendations');
-      setRecommendations(response.data.videos || []);
-      setTrendingBrawlers(response.data.trendingBrawlers || []);
-      setPopularQueries(response.data.popularQueries || []);
-    } catch (error) {
-      console.error('Error fetching recommendations:', error);
-      showToast('Failed to load recommendations', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    setLoading(true);
+    const response = await api.get('/recommendations');
+    setRecommendations(response.data.videos || []);
+    setTrendingBrawlers(response.data.trendingBrawlers || []);
+    setPopularQueries(response.data.popularQueries || []);
+  } catch (error) {
+    console.error('Error fetching recommendations:', error);
+    // Use mock data as fallback
+    setRecommendations(mockRecommendations.videos || []);
+    setTrendingBrawlers(mockRecommendations.trendingBrawlers || []);
+    setPopularQueries(mockRecommendations.popularQueries || []);
+    showToast('Using local recommendations', 'info');
+  } finally {
+    setLoading(false);
+  }
+};
   
   // Handle sending a message
-  const handleSendMessage = async (e) => {
-    e?.preventDefault();
+const handleSendMessage = async (e) => {
+  e?.preventDefault();
+  
+  if (!input.trim()) return;
+  
+  // Add user message to chat
+  const userMessage = {
+    role: 'user',
+    content: input,
+    timestamp: new Date().toISOString()
+  };
+  
+  setMessages(prev => [...prev, userMessage]);
+  setInput('');
+  setLoading(true);
+  
+  try {
+    // Send message to API
+    const response = await api.post('/conversation', {
+      message: userMessage.content
+    });
     
-    if (!input.trim()) return;
-    
-    // Add user message to chat
-    const userMessage = {
-      role: 'user',
-      content: input,
-      timestamp: new Date().toISOString()
+    // Add assistant message to chat
+    const assistantMessage = {
+      role: 'assistant',
+      content: response.data.message,
+      timestamp: new Date().toISOString(),
+      suggestedActions: response.data.suggestedActions || []
     };
     
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-    setLoading(true);
+    setMessages(prev => [...prev, assistantMessage]);
     
-    try {
-      // Send message to API
-      const response = await api.post('/conversation', {
-        message: userMessage.content
+    // Update search results
+    setSearchResults(response.data.results || []);
+    
+    // Update pagination
+    if (response.data.pagination) {
+      setPagination({
+        current: response.data.pagination.page,
+        total: response.data.pagination.pages,
+        limit: response.data.pagination.limit
       });
-      
-      // Add assistant message to chat
-      const assistantMessage = {
-        role: 'assistant',
-        content: response.data.message,
-        timestamp: new Date().toISOString(),
-        suggestedActions: response.data.suggestedActions || []
-      };
-      
-      setMessages(prev => [...prev, assistantMessage]);
-      
-      // Update search results
-      setSearchResults(response.data.results || []);
-      
-      // Update pagination
-      if (response.data.pagination) {
-        setPagination({
-          current: response.data.pagination.page,
-          total: response.data.pagination.pages,
-          limit: response.data.pagination.limit
-        });
-      }
-      
-      // Update processing metrics
-      if (response.data.metrics) {
-        setProcessingMetrics(response.data.metrics);
-      }
-      
-      // Update user preferences
-      fetchUserPreferences();
-    } catch (error) {
-      console.error('Error sending message:', error);
-      // Add error message
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: "Sorry, I couldn't process your message. Please try again.",
-        timestamp: new Date().toISOString(),
-        error: true
-      }]);
-      
-      showToast('Failed to process your message', 'error');
-    } finally {
-      setLoading(false);
     }
-  };
+    
+    // Update processing metrics
+    if (response.data.metrics) {
+      setProcessingMetrics(response.data.metrics);
+    }
+    
+    // Update user preferences
+    fetchUserPreferences();
+  } catch (error) {
+    console.error('Error sending message:', error);
+    // Use mock data as fallback
+    const mockResponse = mockConversationResponse;
+    
+    const assistantMessage = {
+      role: 'assistant',
+      content: mockResponse.message,
+      timestamp: new Date().toISOString(),
+      suggestedActions: mockResponse.suggestedActions || []
+    };
+    
+    setMessages(prev => [...prev, assistantMessage]);
+    setSearchResults(mockResponse.results || []);
+    
+    if (mockResponse.pagination) {
+      setPagination({
+        current: mockResponse.pagination.page,
+        total: mockResponse.pagination.pages,
+        limit: mockResponse.pagination.limit
+      });
+    }
+    
+    setProcessingMetrics(mockResponse.metrics);
+    showToast('Using local data for conversation', 'info');
+  } finally {
+    setLoading(false);
+  }
+};
   
   // Handle suggested action click
   const handleSuggestedAction = async (action) => {
