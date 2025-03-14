@@ -29,8 +29,8 @@ const openai = new OpenAIApi(configuration);
 const LLM_MODEL = process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
 
 // Brawl Stars game information
-const BRAWLERS = require('./youtube-service').BRAWLERS;
-const GAME_MODES = require('./youtube-service').GAME_MODES;
+const BRAWLERS = require('./youtube-service-improved').BRAWLERS;
+const GAME_MODES = require('./youtube-service-improved').GAME_MODES;
 
 // Constants for the conversation
 const CONVERSATION_CONTEXT_LENGTH = 12; // Increased from 10 to provide more context
